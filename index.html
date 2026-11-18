@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hotel Staff PMS - Supabase Live</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Secure Staff Login Modal -->
+  <div id="authOverlay">
+    <div class="auth-card">
+      <h2>🏨 Staff Portal Login</h2>
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div>
+          <label for="staffEmail">Staff Email</label>
+          <input id="staffEmail" type="email" required placeholder="staff@hotel.com" style="width:100%; margin-top:4px;" />
+        </div>
+        <div>
+          <label for="staffPassword">Password</label>
+          <input id="staffPassword" type="password" required placeholder="••••••••" style="width:100%; margin-top:4px;" />
+        </div>
+        <button type="submit" style="width:100%; margin-top:8px;">Sign In to Shift</button>
+        <p id="authError" style="color:#dc2626; font-size:0.8rem; margin-top:8px; text-align:center; display:none;"></p>
+      </form>
+    </div>
+  </div>
+
+  <div class="app-layout">
+    <aside>
+      <h2>🏨 Staff PMS</h2>
+      <nav>
+        <a onclick="switchTab('frontdesk')" id="nav-frontdesk" class="active">Front Desk & Rooms</a>
+        <a onclick="switchTab('bookings')" id="nav-bookings">Bookings & Approvals</a>
+        <a onclick="switchTab('billing')" id="nav-billing">Billing & Folios</a>
+        <a onclick="switchTab('housekeeping')" id="nav-housekeeping">Housekeeping</a>
+      </nav>
+      <div style="margin-top:auto; font-size:0.8rem; color:#94a3b8;">
+        <span id="loggedInUser">Logged in as Staff</span><br />
+        <button onclick="handleLogout()" class="secondary" style="margin-top:8px; width:100%; font-size:0.75rem; padding:4px;">Sign Out</button>
+      </div>
+    </aside>
+
+    <main>
+      <header>
+        <div>
+          <h1 id="pageTitle">Front Desk & Room Operations</h1>
+          <p style="color:var(--muted); font-size:0.9rem;">Live Supabase Database Sync & Offline Backup Active</p>
+        </div>
+        <input id="searchInput" type="search" placeholder="Search guest or room..." oninput="renderCurrentTab()" />
+      </header>
+
+      <section class="stats" id="statsBar"></section>
+
+      <!-- TAB 1: FRONT DESK -->
+      <div id="tab-frontdesk" class="tab-content active">
+        <div class="grid">
+          <section class="card">
+            <h3 style="margin-bottom:12px;">Live Room Directory</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Room</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="roomTableBody"></tbody>
+            </table>
+          </section>
+
+          <section class="card">
+            <h3 style="margin-bottom:12px;">Quick Check-In / Booking</h3>
+            <form onsubmit="handleCheckIn(event)">
+              <div>
+                <label for="guestName">Guest Full Name</label>
+                <input id="guestName" type="text" required placeholder="e.g., Kwame Mensah" style="width:100%; margin-top:4px;" />
+              </div>
+              <div>
+                <label for="guestPhone">Guest Phone Number</label>
+                <input id="guestPhone" type="tel" required autocomplete="tel" placeholder="e.g., +233 24 123 4567" pattern="[+]?[0-9() -]{7,20}" title="Enter a phone number using digits, spaces, parentheses, or hyphens." style="width:100%; margin-top:4px;" />
+              </div>
+              <div>
+                <label for="roomSelect">Available Room</label>
+                <select id="roomSelect" style="width:100%; margin-top:4px;"></select>
+              </div>
+              <div style="display:flex;gap:10px;">
+                <div style="flex:1;min-width:0;">
+                  <label for="checkInDate">Check-In Date</label>
+                  <input id="checkInDate" type="date" required onchange="calculateNights()" style="width:100%;margin-top:4px;" />
+                </div>
+                <div style="flex:1;min-width:0;">
+                  <label for="checkOutDate">Check-Out Date</label>
+                  <input id="checkOutDate" type="date" required onchange="calculateNights()" style="width:100%;margin-top:4px;" />
+                </div>
+              </div>
+              <p id="nightsSummary" aria-live="polite" style="color:var(--muted);font-size:0.85rem;">Select dates to calculate nights.</p>
+              <button type="submit">Create Reservation</button>
+            </form>
+          </section>
+        </div>
+      </div>
+
+      <!-- TAB 2: BOOKINGS & APPROVALS -->
+      <div id="tab-bookings" class="tab-content">
+        <section class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
+            <h3>Reservation Approvals & Mistake Corrections</h3>
+            <button type="button" onclick="exportBookingsCSV()" class="secondary" style="font-size:0.8rem;padding:6px 12px;">Export CSV Report</button>
+          </div>
+          <div style="margin-bottom:16px;">
+            <input id="bookingSearchInput" type="search" placeholder="Search by guest name, phone number, or room..." oninput="renderBookingsView()" aria-label="Search bookings by guest name, phone number, or room" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:6px;font-size:0.9rem;" />
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Guest</th>
+                <th>Phone</th>
+                <th>Room</th>
+                <th>Check-In</th>
+                <th>Check-Out</th>
+                <th>Nights</th>
+                <th>Total (GHS)</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="bookingsTableBody"></tbody>
+          </table>
+        </section>
+      </div>
+
+      <!-- TAB 3: BILLING & FOLIOS -->
+      <div id="tab-billing" class="tab-content">
+        <section class="card">
+          <h3 style="margin-bottom:12px;">Guest Billing & Payment Status</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Guest</th>
+                <th>Room</th>
+                <th>Amount</th>
+                <th>Payment</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="billingTableBody"></tbody>
+          </table>
+        </section>
+      </div>
+
+      <!-- TAB 4: HOUSEKEEPING -->
+      <div id="tab-housekeeping" class="tab-content">
+        <section class="card">
+          <h3 style="margin-bottom:12px;">Housekeeping Management</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Room</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="housekeepingTableBody"></tbody>
+          </table>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Mobile Bottom Navigation Bar -->
+  <div class="mobile-nav">
+    <button onclick="switchTab('frontdesk')" id="mb-frontdesk" class="active"><span>Front Desk</span></button>
+    <button onclick="switchTab('bookings')" id="mb-bookings"><span>Bookings</span></button>
+    <button onclick="switchTab('billing')" id="mb-billing"><span>Billing</span></button>
+    <button onclick="switchTab('housekeeping')" id="mb-housekeeping"><span>Clean</span></button>
+  </div>
+
+  <!-- Load Supabase UMD Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Load PMS Logic -->
+  <script src="script.js"></script>
+</body>
+</html>
