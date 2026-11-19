@@ -471,9 +471,24 @@ async function deleteBooking(bookingId, roomNumber) {
 
 async function checkoutRoom(roomNumber) {
   if (!db) return alert('Supabase is not configured.');
+
+  const matchingBooking = bookings.find(
+    b =>
+      String(b.room_number ?? '') === String(roomNumber) &&
+      String(b.booking_status ?? '').toLowerCase() !== 'cancelled'
+  );
+
   const { error } = await db.from('rooms').update({ status: 'dirty' }).eq('room_number', roomNumber);
-  if (error) alert(error.message);
-  else loadPMSData();
+  if (error) {
+    alert('Checkout error: ' + error.message);
+    return;
+  }
+
+  await loadPMSData();
+
+  if (matchingBooking && confirm(`Room ${roomNumber} checked out. Print receipt for ${matchingBooking.guest_name || 'guest'}?`)) {
+    printBookingReceipt(matchingBooking.id);
+  }
 }
 
 async function markRoomClean(roomNumber) {
