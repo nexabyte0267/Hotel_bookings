@@ -203,7 +203,8 @@ function renderCurrentTab() {
           }
         </td>
       </tr>
-    `}).join('');
+    `;
+    }).join('');
 
     const select = document.getElementById('roomSelect');
     if (select) {
@@ -233,10 +234,11 @@ function renderCurrentTab() {
       <tr>
         <td><strong>${escapeHtml(b.guest_name)}</strong></td>
         <td>Room ${escapeHtml(b.room_number)}</td>
-        <td>GHS ${b.total_amount}</td>
-        <td><span class="badge ${escapeHtml(b.payment_status)}">${escapeHtml(String(b.payment_status).toUpperCase())}</span></td>
+        <td>GHS ${Number(b.total_amount || 0).toFixed(2)}</td>
+        <td><span class="badge ${escapeHtml(b.payment_status || 'pending')}">${escapeHtml(String(b.payment_status || 'pending').toUpperCase())}</span></td>
         <td>
           ${b.payment_status === 'pending' ? `<button onclick="markAsPaid('${escapeAttribute(b.id)}')">Mark Paid</button>` : `<span style="color:var(--muted)">Settled</span>`}
+          <button class="secondary" onclick="printBookingReceipt('${escapeAttribute(b.id)}')">Print Receipt</button>
         </td>
       </tr>
     `).join('');
@@ -260,7 +262,8 @@ function renderCurrentTab() {
           ${status === 'dirty' ? `<button onclick="markRoomClean('${escapeAttribute(roomNumber)}')">Mark Clean</button>` : `<span style="color:var(--muted)">No Action Needed</span>`}
         </td>
       </tr>
-    `}).join('');
+    `;
+    }).join('');
   }
 }
 
@@ -297,13 +300,14 @@ function renderBookingsView() {
       <td><span class="badge ${escapeHtml(booking.booking_status || 'pending')}">${escapeHtml(String(booking.booking_status || 'pending').toUpperCase())}</span></td>
       <td>
         ${booking.booking_status === 'pending' ? `<button onclick="approveBooking('${escapeAttribute(booking.id)}')">Approve</button>` : ''}
+        <button class="secondary" onclick="printBookingReceipt('${escapeAttribute(booking.id)}')">Receipt</button>
         <button class="danger" onclick="deleteBooking('${escapeAttribute(booking.id)}', '${escapeAttribute(booking.room_number)}')">Cancel / Delete</button>
       </td>
     </tr>
   `).join('');
 }
 
-// --- 5. PMS ACTIONS (SUPABASE WRITES) ---
+// --- 5. PMS ACTIONS (SUPABASE WRITES & RECEIPTS) ---
 function formatLocalDate(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -361,6 +365,36 @@ function hasDateOverlap(roomNum, newCheckInStr, newCheckOutStr) {
     const existingOut = new Date(`${b.check_out_date}T00:00:00`);
     return newIn < existingOut && newOut > existingIn;
   });
+}
+
+function printBookingReceipt(bookingId) {
+  const booking = bookings.find(b => String(b.id) === String(bookingId));
+  if (!booking) return alert('Booking record not found.');
+
+  const roomObj = rooms.find(r => String(r.room_number ?? r.number ?? '') === String(booking.room_number));
+  const nights = Number(booking.nights) || 1;
+  const total = Number(booking.total_amount) || 0;
+  const rate = nights > 0 ? total / nights : total;
+
+  const setText = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = value;
+  };
+
+  setText('recId', String(booking.id || '').slice(0, 8).toUpperCase() || '-');
+  setText('recDate', new Date().toLocaleDateString());
+  setText('recGuest', booking.guest_name || 'Walk-in Guest');
+  setText('recPhone', booking.phone || 'Not Provided');
+  setText('recRoom', booking.room_number || '-');
+  setText('recType', roomObj ? (roomObj.room_type ?? roomObj.type ?? 'Standard') : 'Standard');
+  setText('recCheckIn', booking.check_in_date || 'N/A');
+  setText('recCheckOut', booking.check_out_date || 'N/A');
+  setText('recNights', nights);
+  setText('recPayment', String(booking.payment_status || 'pending').toUpperCase());
+  setText('recRate', rate.toFixed(2));
+  setText('recTotal', total.toFixed(2));
+
+  window.print();
 }
 
 async function handleCheckIn(e) {
