@@ -171,6 +171,44 @@
     </main>
   </div>
 
+  <!-- Printable Individual Guest Receipt -->
+<div id="printReceiptModal" style="display: none;">
+  <div style="max-width: 380px; margin: 0 auto; padding: 20px; font-family: monospace; color: #000;">
+    <div style="text-align: center; margin-bottom: 14px;">
+      <h2 style="font-size: 1.15rem; margin: 0 0 4px;">HOTEL STAFF PMS</h2>
+      <p style="font-size: 0.8rem; margin: 0;">Official Guest Folio &amp; Receipt</p>
+      <hr style="border: dashed 1px #999; margin: 10px 0;" />
+    </div>
+
+    <div style="font-size: 0.85rem; line-height: 1.55;">
+      <p style="margin: 2px 0;"><strong>Receipt #:</strong> <span id="recId">-</span></p>
+      <p style="margin: 2px 0;"><strong>Issued:</strong> <span id="recDate">-</span></p>
+      <p style="margin: 2px 0;"><strong>Guest:</strong> <span id="recGuest">-</span></p>
+      <p style="margin: 2px 0;"><strong>Phone:</strong> <span id="recPhone">-</span></p>
+      <p style="margin: 2px 0;"><strong>Room:</strong> <span id="recRoom">-</span> (<span id="recType">-</span>)</p>
+      <hr style="border: dashed 1px #ccc; margin: 8px 0;" />
+      <p style="margin: 2px 0;"><strong>Check-In:</strong> <span id="recCheckIn">-</span></p>
+      <p style="margin: 2px 0;"><strong>Check-Out:</strong> <span id="recCheckOut">-</span></p>
+      <p style="margin: 2px 0;"><strong>Duration:</strong> <span id="recNights">-</span> Night(s)</p>
+      <p style="margin: 2px 0;"><strong>Payment:</strong> <span id="recPayment">-</span></p>
+    </div>
+
+    <hr style="border: dashed 1px #999; margin: 10px 0;" />
+
+    <div style="display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 6px;">
+      <span>Nightly Rate:</span>
+      <span>GHS <span id="recRate">0.00</span></span>
+    </div>
+    <div style="display: flex; justify-content: space-between; font-size: 1.05rem; font-weight: bold;">
+      <span>Total Amount:</span>
+      <span>GHS <span id="recTotal">0.00</span></span>
+    </div>
+
+    <hr style="border: dashed 1px #999; margin: 12px 0;" />
+    <p style="text-align: center; font-size: 0.75rem; margin: 0;">Thank you for staying with us!</p>
+  </div>
+</div>
+
   <!-- Mobile Bottom Navigation Bar -->
   <div class="mobile-nav">
     <button onclick="switchTab('frontdesk')" id="mb-frontdesk" class="active"><span>Front Desk</span></button>
