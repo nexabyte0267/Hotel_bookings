@@ -14,6 +14,7 @@ const db = supabaseConfigured && window.supabase
 if (!db) {
   console.warn("Supabase is not configured properly. Running in offline/fallback mode.");
 }
+
 // State data with LocalStorage offline backup
 function readCache(key) {
   try {
@@ -316,8 +317,8 @@ function calculateNights() {
   const summary = document.getElementById('nightsSummary');
   if (!checkInInput || !checkOutInput) return null;
 
-  if (checkInInput.value) {
-    checkOutInput.min = new Date(checkInInput.valueAsNumber + 86400000).toISOString().slice(0, 10);
+  if (checkInInput.value && Number.isFinite(checkInInput.valueAsNumber)) {
+    checkOutInput.min = formatLocalDate(new Date(checkInInput.valueAsNumber + 86400000));
   }
 
   const checkInTime = checkInInput.valueAsNumber;
@@ -341,9 +342,25 @@ function initializeDateInputs() {
   checkInInput.min = formatLocalDate(today);
   if (!checkInInput.value) checkInInput.value = formatLocalDate(today);
   if (!checkOutInput.value) {
-    checkOutInput.value = new Date(checkInInput.valueAsNumber + 86400000).toISOString().slice(0, 10);
+    checkOutInput.value = formatLocalDate(new Date(checkInInput.valueAsNumber + 86400000));
   }
   calculateNights();
+}
+
+function hasDateOverlap(roomNum, newCheckInStr, newCheckOutStr) {
+  const newIn = new Date(`${newCheckInStr}T00:00:00`);
+  const newOut = new Date(`${newCheckOutStr}T00:00:00`);
+  if (!Number.isFinite(newIn.getTime()) || !Number.isFinite(newOut.getTime())) return false;
+
+  return bookings.some(b => {
+    if (String(b.room_number ?? '') !== String(roomNum)) return false;
+    if (String(b.booking_status ?? '').toLowerCase() === 'cancelled') return false;
+    if (!b.check_in_date || !b.check_out_date) return false;
+
+    const existingIn = new Date(`${b.check_in_date}T00:00:00`);
+    const existingOut = new Date(`${b.check_out_date}T00:00:00`);
+    return newIn < existingOut && newOut > existingIn;
+  });
 }
 
 async function handleCheckIn(e) {
@@ -360,6 +377,9 @@ async function handleCheckIn(e) {
   if (!guestName || !phone || !roomNumber) return alert('Please enter the guest name and phone number, and select a room.');
   if (!checkInDate || !checkOutDate || !Number.isInteger(nights) || nights < 1) {
     return alert('Please select a check-in date and a check-out date after check-in.');
+  }
+  if (hasDateOverlap(roomNumber, checkInDate, checkOutDate)) {
+    return alert(`Room ${roomNumber} already has a booking overlapping ${checkInDate} to ${checkOutDate}.`);
   }
 
   const roomObj = rooms.find(r => String(r.room_number ?? r.number ?? '') === roomNumber);
@@ -382,7 +402,7 @@ async function handleCheckIn(e) {
 
   // Mark room occupied
   await db.from('rooms').update({ status: 'occupied' }).eq('room_number', roomNumber);
-  
+
   e.target.reset();
   initializeDateInputs();
   loadPMSData();
