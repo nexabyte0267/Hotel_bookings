@@ -69,3 +69,21 @@
     
     .tab-content { display: none; }
     .tab-content.active { display: block; }
+
+@media print {
+    body * {
+      visibility: hidden;
+    }
+    #printReceiptModal,
+    #printReceiptModal * {
+      visibility: visible;
+    }
+    #printReceiptModal {
+      display: block !important;
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 100%;
+      background: #fff;
+    }
+  }
